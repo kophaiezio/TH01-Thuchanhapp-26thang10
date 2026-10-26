@@ -7,9 +7,13 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "server": "json-server --watch db.json --port 3000 --host 0.0.0.0",
+    "server:delay": "json-server --watch db.json --port 3000 --host 0.0.0.0 --delay 800"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-community/netinfo": "^12.0.1",
     "@react-native/new-app-screen": "0.87.1",
     "@react-navigation/bottom-tabs": "^7.20.0",
     "@react-navigation/native": "^7.5.0",
@@ -36,6 +40,7 @@
     "@types/react-test-renderer": "^19.1.0",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
+    "json-server": "^0.17.4",
     "prettier": "2.8.8",
     "react-test-renderer": "19.2.3",
     "typescript": "^6.0.3"

@@ -2,24 +2,30 @@ import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import type {Assignment, Subject} from '../types';
 import {colors} from '../theme';
-import {Card, StatusBadge} from './common';
+import {Card, StatusBadge, SyncBadge} from './common';
 
 export function formatDueDate(value: string): string {
-  return new Date(value).toLocaleDateString('vi-VN', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-  });
+  try {
+    return new Date(value).toLocaleDateString('vi-VN', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+    });
+  } catch {
+    return value;
+  }
 }
 
 export function AssignmentItem({
   assignment,
   subject,
+  isPendingSync = false,
   onPress,
   onToggle,
 }: {
   assignment: Assignment;
-  subject: Subject;
+  subject?: Subject;
+  isPendingSync?: boolean;
   onPress: () => void;
   onToggle: () => void;
 }): React.JSX.Element {
@@ -32,14 +38,18 @@ export function AssignmentItem({
           onPress={onPress}
           style={styles.details}>
           <Text style={styles.title}>{assignment.title}</Text>
-          <Text style={styles.meta}>{subject.name}</Text>
-          <Text style={styles.due}>Hạn nộp · {formatDueDate(assignment.dueAt)}</Text>
+          {subject ? <Text style={styles.meta}>{subject.name}</Text> : null}
+          <Text style={styles.due}>
+            Hạn nộp · {formatDueDate(assignment.dueAt)}
+          </Text>
         </Pressable>
         <Pressable
           accessibilityRole="checkbox"
           accessibilityState={{checked: assignment.completed}}
           accessibilityLabel={
-            assignment.completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'
+            assignment.completed
+              ? 'Đánh dấu chưa hoàn thành'
+              : 'Đánh dấu đã hoàn thành'
           }
           onPress={onToggle}
           style={[
@@ -51,18 +61,21 @@ export function AssignmentItem({
           ) : null}
         </Pressable>
       </View>
-      <StatusBadge completed={assignment.completed} />
+      <View style={styles.footer}>
+        <StatusBadge completed={assignment.completed} />
+        {isPendingSync ? <SyncBadge label="Chưa đồng bộ" /> : null}
+      </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {marginBottom: 10},
-  row: {flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12},
+  row: {flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10},
   details: {flex: 1, paddingRight: 12},
   title: {fontSize: 14, color: colors.text, fontWeight: '700'},
-  meta: {fontSize: 12, color: colors.primary, marginTop: 5},
-  due: {fontSize: 12, color: colors.muted, marginTop: 5},
+  meta: {fontSize: 12, color: colors.primary, marginTop: 4},
+  due: {fontSize: 11, color: colors.muted, marginTop: 4},
   check: {
     width: 28,
     height: 28,
@@ -73,4 +86,9 @@ const styles = StyleSheet.create({
   checked: {backgroundColor: colors.green},
   unchecked: {borderColor: colors.border, borderWidth: 1.5},
   checkmark: {color: '#FFFFFF', fontSize: 17, fontWeight: '800'},
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
 });

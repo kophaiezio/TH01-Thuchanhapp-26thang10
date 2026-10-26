@@ -1,13 +1,34 @@
 import React, {useMemo, useState} from 'react';
-import {FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {AssignmentsStackParamList, Assignment} from '../../types';
 import {useAppContext} from '../../context/AppContext';
+import {useSync} from '../../context/SyncContext';
 import {AssignmentItem} from '../../components/AssignmentItem';
-import {Card, EmptyState, PageTitle, Screen} from '../../components/common';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  LastUpdatedText,
+  LoadingState,
+  OfflineBanner,
+  PageTitle,
+  Screen,
+  SyncNotificationBanner,
+} from '../../components/common';
 import {colors} from '../../theme';
 
-type Props = NativeStackScreenProps<AssignmentsStackParamList, 'Assignments'>;
+type Props = NativeStackScreenProps<
+  AssignmentsStackParamList,
+  'Assignments'
+>;
 type Filter = 'all' | 'pending' | 'completed';
 
 const filters: {key: Filter; label: string}[] = [
@@ -16,10 +37,27 @@ const filters: {key: Filter; label: string}[] = [
   {key: 'completed', label: 'Hoàn thành'},
 ];
 
-function AssignmentsScreen({navigation}: Props): React.JSX.Element {
-  const {assignments, subjects, toggleAssignment} = useAppContext();
+export function AssignmentsScreen({navigation}: Props): React.JSX.Element {
+  const {
+    assignments,
+    subjects,
+    isLoading,
+    isRefreshing,
+    isError,
+    errorMessage,
+    lastUpdated,
+    refreshAll,
+    toggleAssignment,
+  } = useAppContext();
+
+  const {hasPendingSync} = useSync();
   const [filter, setFilter] = useState<Filter>('all');
-  const subjectById = new Map(subjects.map(subject => [subject.id, subject]));
+
+  const subjectById = useMemo(
+    () => new Map(subjects.map(subject => [subject.id, subject])),
+    [subjects],
+  );
+
   const visibleAssignments = useMemo(
     () =>
       assignments
@@ -39,12 +77,46 @@ function AssignmentsScreen({navigation}: Props): React.JSX.Element {
     [assignments, filter],
   );
 
+  if (isLoading && assignments.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <LoadingState message="Đang tải danh sách bài tập..." />
+      </Screen>
+    );
+  }
+
+  if (isError && assignments.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <ErrorState
+          title="Không thể tải bài tập"
+          message={errorMessage}
+          onRetry={refreshAll}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
+      <OfflineBanner />
+      <SyncNotificationBanner />
       <PageTitle
         title="Bài tập"
-        subtitle={`${assignments.filter(item => !item.completed).length} bài đang chờ bạn`}
+        subtitle={`${assignments.filter(item => !item.completed).length} bài tập đang chờ bạn`}
+        rightAction={
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('AddAssignment')}
+            style={styles.addBtn}>
+            <Text style={styles.addBtnText}>+ Thêm mới</Text>
+          </Pressable>
+        }
       />
+      <LastUpdatedText timestamp={lastUpdated} />
+
       <View style={styles.filters}>
         {filters.map(item => (
           <Pressable
@@ -66,9 +138,17 @@ function AssignmentsScreen({navigation}: Props): React.JSX.Element {
           </Pressable>
         ))}
       </View>
+
       <FlatList
         data={visibleAssignments}
         keyExtractor={item => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshAll}
+            colors={[colors.primary]}
+          />
+        }
         contentContainerStyle={[
           styles.list,
           visibleAssignments.length === 0 ? styles.emptyList : undefined,
@@ -77,22 +157,20 @@ function AssignmentsScreen({navigation}: Props): React.JSX.Element {
           <Card>
             <EmptyState
               title="Không có bài tập ở mục này"
-              message="Hãy chọn một bộ lọc khác để xem danh sách của bạn."
+              message="Hãy chọn bộ lọc khác hoặc nhấn '+ Thêm mới' để tạo bài tập."
             />
           </Card>
         }
         renderItem={({item}: {item: Assignment}) => {
           const subject = subjectById.get(item.subjectId);
-          if (!subject) {
-            return null;
-          }
           return (
             <AssignmentItem
               assignment={item}
               subject={subject}
+              isPendingSync={hasPendingSync(item.id)}
               onPress={() =>
                 navigation.navigate('AssignmentDetail', {
-                  assignmentId: item.id,
+                  id: item.id,
                 })
               }
               onToggle={() => toggleAssignment(item.id)}
@@ -105,27 +183,38 @@ function AssignmentsScreen({navigation}: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  addBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   filters: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 8,
+    marginBottom: 10,
     padding: 4,
-    borderRadius: 15,
+    borderRadius: 14,
     backgroundColor: '#EBEDF4',
   },
   filter: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 9,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   selectedFilter: {
     backgroundColor: '#FFFFFF',
     elevation: 1,
   },
-  filterLabel: {fontSize: 11, color: colors.muted, fontWeight: '600'},
+  filterLabel: {fontSize: 12, color: colors.muted, fontWeight: '600'},
   selectedLabel: {color: colors.primary, fontWeight: '800'},
-  list: {paddingHorizontal: 20, paddingBottom: 20},
+  list: {paddingHorizontal: 20, paddingBottom: 24},
   emptyList: {flexGrow: 1, justifyContent: 'center'},
 });
 

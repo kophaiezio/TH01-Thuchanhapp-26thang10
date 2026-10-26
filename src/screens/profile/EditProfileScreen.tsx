@@ -11,7 +11,7 @@ import {
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {ProfileStackParamList} from '../../types';
 import {FormField} from '../../components/FormField';
-import {Card, Screen} from '../../components/common';
+import {Card, OfflineBanner, Screen} from '../../components/common';
 import {useAppContext} from '../../context/AppContext';
 import {colors} from '../../theme';
 import {
@@ -21,12 +21,13 @@ import {
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'EditProfile'>;
 
-function EditProfileScreen({navigation}: Props): React.JSX.Element {
+export function EditProfileScreen({navigation}: Props): React.JSX.Element {
   const {student, updateProfile} = useAppContext();
   const [fullName, setFullName] = useState(student.fullName);
   const [email, setEmail] = useState(student.email);
   const [phone, setPhone] = useState(student.phone);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setFullName(student.fullName);
@@ -34,7 +35,7 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
     setPhone(student.phone);
   }, [student.email, student.fullName, student.phone]);
 
-  function handleSave(): void {
+  async function handleSave(): Promise<void> {
     const profile = {
       fullName: fullName.trim(),
       email: email.trim(),
@@ -47,14 +48,22 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
       return;
     }
 
-    updateProfile(profile);
-    Alert.alert('Đã lưu', 'Thông tin cá nhân đã được cập nhật.', [
-      {text: 'OK', onPress: () => navigation.goBack()},
-    ]);
+    setIsSaving(true);
+    const success = await updateProfile(profile);
+    setIsSaving(false);
+
+    if (success) {
+      Alert.alert(
+        'Đã lưu',
+        'Thông tin cá nhân đã được cập nhật (sẽ tự động đồng bộ khi có mạng).',
+        [{text: 'OK', onPress: () => navigation.goBack()}],
+      );
+    }
   }
 
   return (
     <Screen>
+      <OfflineBanner />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -66,17 +75,27 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
           </Text>
           <Card>
             <FormField
-              label="Họ và tên"
+              label="Họ và tên *"
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={text => {
+                setFullName(text);
+                if (errors.fullName) {
+                  setErrors(prev => ({...prev, fullName: undefined}));
+                }
+              }}
               placeholder="Nguyễn Văn A"
               autoCapitalize="words"
               error={errors.fullName}
             />
             <FormField
-              label="Email"
+              label="Email *"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={text => {
+                setEmail(text);
+                if (errors.email) {
+                  setErrors(prev => ({...prev, email: undefined}));
+                }
+              }}
               placeholder="ten@domain.com"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -84,9 +103,14 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
               error={errors.email}
             />
             <FormField
-              label="Số điện thoại"
+              label="Số điện thoại *"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={text => {
+                setPhone(text);
+                if (errors.phone) {
+                  setErrors(prev => ({...prev, phone: undefined}));
+                }
+              }}
               placeholder="0912345678"
               keyboardType="phone-pad"
               error={errors.phone}
@@ -94,9 +118,12 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
           </Card>
           <Pressable
             accessibilityRole="button"
+            disabled={isSaving}
             onPress={handleSave}
-            style={styles.button}>
-            <Text style={styles.buttonText}>Lưu thay đổi</Text>
+            style={[styles.button, isSaving && styles.buttonDisabled]}>
+            <Text style={styles.buttonText}>
+              {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -106,19 +133,16 @@ function EditProfileScreen({navigation}: Props): React.JSX.Element {
 
 const styles = StyleSheet.create({
   flex: {flex: 1},
-  content: {padding: 20, paddingBottom: 30},
-  intro: {
-    fontSize: 13,
-    color: colors.muted,
-    lineHeight: 20,
-    marginBottom: 14,
-  },
+  content: {paddingHorizontal: 20, paddingBottom: 24},
+  intro: {fontSize: 13, color: colors.muted, marginBottom: 12},
   button: {
     alignItems: 'center',
     paddingVertical: 15,
     borderRadius: 15,
     backgroundColor: colors.primary,
+    marginTop: 4,
   },
+  buttonDisabled: {opacity: 0.6},
   buttonText: {fontSize: 14, color: '#FFFFFF', fontWeight: '800'},
 });
 

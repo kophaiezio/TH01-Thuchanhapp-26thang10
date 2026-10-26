@@ -12,16 +12,19 @@ import SubjectDetailScreen from '../screens/subjects/SubjectDetailScreen';
 import SubjectsScreen from '../screens/subjects/SubjectsScreen';
 import AssignmentDetailScreen from '../screens/assignments/AssignmentDetailScreen';
 import AssignmentsScreen from '../screens/assignments/AssignmentsScreen';
+import AddAssignmentScreen from '../screens/assignments/AddAssignmentScreen';
 import ScheduleDetailScreen from '../screens/timetable/ScheduleDetailScreen';
 import ScheduleScreen from '../screens/timetable/ScheduleScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import GradesScreen from '../screens/profile/GradesScreen';
 import {colors} from '../theme';
 
 const homeStack = createNativeStackNavigator<HomeStackParamList>();
 const subjectsStack = createNativeStackNavigator<SubjectsStackParamList>();
 const scheduleStack = createNativeStackNavigator<ScheduleStackParamList>();
-const assignmentsStack = createNativeStackNavigator<AssignmentsStackParamList>();
+const assignmentsStack =
+  createNativeStackNavigator<AssignmentsStackParamList>();
 const profileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 const stackScreenOptions = {
@@ -102,6 +105,11 @@ export function AssignmentsStackNavigator(): React.JSX.Element {
         component={AssignmentDetailScreen}
         options={{title: 'Chi tiết bài tập'}}
       />
+      <assignmentsStack.Screen
+        name="AddAssignment"
+        component={AddAssignmentScreen}
+        options={{title: 'Thêm bài tập mới'}}
+      />
     </assignmentsStack.Navigator>
   );
 }
@@ -118,6 +126,11 @@ export function ProfileStackNavigator(): React.JSX.Element {
         name="EditProfile"
         component={EditProfileScreen}
         options={{title: 'Chỉnh sửa cá nhân'}}
+      />
+      <profileStack.Screen
+        name="Grades"
+        component={GradesScreen}
+        options={{title: 'Kết quả học tập'}}
       />
     </profileStack.Navigator>
   );

@@ -1,26 +1,71 @@
 import React from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {HomeStackParamList, SubjectsStackParamList} from '../../types';
 import {useAppContext} from '../../context/AppContext';
-import {Card, EmptyState, InfoRow, Screen} from '../../components/common';
+import {useCachedSubject} from '../../hooks/useCachedSubject';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  InfoRow,
+  LastUpdatedText,
+  LoadingState,
+  OfflineBanner,
+  Screen,
+} from '../../components/common';
 import {colors} from '../../theme';
 
 type Props =
   | NativeStackScreenProps<HomeStackParamList, 'SubjectDetail'>
   | NativeStackScreenProps<SubjectsStackParamList, 'SubjectDetail'>;
 
-function SubjectDetailScreen({route}: Props): React.JSX.Element {
-  const {subjectId} = route.params;
+export function SubjectDetailScreen({route}: Props): React.JSX.Element {
+  const {id: subjectId} = route.params;
+
   const {subjects, schedule, assignments} = useAppContext();
-  const subject = subjects.find(item => item.id === subjectId);
+
+  const contextSubject = subjects.find(s => s.id === subjectId);
+
+  const {
+    data: subject,
+    isLoading,
+    isRefreshing,
+    isError,
+    error,
+    lastUpdated,
+    refetch,
+  } = useCachedSubject(subjectId, contextSubject);
+
+  if (isLoading && !subject) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <LoadingState message="Đang tải chi tiết môn học..." />
+      </Screen>
+    );
+  }
+
+  if (isError && !subject) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <ErrorState
+          title="Không thể tải môn học"
+          message={error}
+          onRetry={refetch}
+        />
+      </Screen>
+    );
+  }
 
   if (!subject) {
     return (
       <Screen>
+        <OfflineBanner />
         <EmptyState
           title="Không tìm thấy môn học"
-          message="Môn học này có thể đã được gỡ khỏi danh sách."
+          message="Môn học này có thể không tồn tại hoặc đã bị xóa."
         />
       </Screen>
     );
@@ -33,22 +78,41 @@ function SubjectDetailScreen({route}: Props): React.JSX.Element {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refetch}
+            colors={[colors.primary]}
+          />
+        }>
+        <LastUpdatedText timestamp={lastUpdated} />
         <Card style={styles.hero}>
-          <View style={[styles.codeTile, {backgroundColor: `${subject.color}20`}]}>
-            <Text style={[styles.code, {color: subject.color}]}>
+          <View
+            style={[
+              styles.codeTile,
+              {backgroundColor: `${subject.color || colors.primary}20`},
+            ]}>
+            <Text
+              style={[
+                styles.code,
+                {color: subject.color || colors.primary},
+              ]}>
               {subject.code}
             </Text>
           </View>
           <Text style={styles.name}>{subject.name}</Text>
           <Text style={styles.description}>{subject.description}</Text>
         </Card>
+
         <Card>
           <InfoRow label="Mã môn học" value={subject.code} />
           <InfoRow label="Số tín chỉ" value={`${subject.credits} tín chỉ`} />
-          <InfoRow label="Phòng học" value={subject.room} />
-          <InfoRow label="Số buổi học mỗi tuần" value={`${classCount} buổi`} />
-          <InfoRow label="Bài tập" value={`${assignmentCount} bài`} />
+          <InfoRow label="Phòng học mặc định" value={subject.room} />
+          <InfoRow label="Số buổi học trong tuần" value={`${classCount} buổi`} />
+          <InfoRow label="Số bài tập được giao" value={`${assignmentCount} bài`} />
         </Card>
       </ScrollView>
     </Screen>

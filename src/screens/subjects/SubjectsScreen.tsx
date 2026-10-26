@@ -1,6 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import {
   FlatList,
+  RefreshControl,
   StyleSheet,
   TextInput,
   View,
@@ -8,39 +9,100 @@ import {
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {SubjectsStackParamList} from '../../types';
 import {useAppContext} from '../../context/AppContext';
-import {Card, EmptyState, PageTitle, Screen} from '../../components/common';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  LastUpdatedText,
+  LoadingState,
+  OfflineBanner,
+  PageTitle,
+  Screen,
+  SyncNotificationBanner,
+} from '../../components/common';
 import {SubjectCard} from '../../components/SubjectCard';
 import {colors} from '../../theme';
 
 type Props = NativeStackScreenProps<SubjectsStackParamList, 'Subjects'>;
 
-function SubjectsScreen({navigation}: Props): React.JSX.Element {
-  const {subjects} = useAppContext();
+export function SubjectsScreen({navigation}: Props): React.JSX.Element {
+  const {
+    subjects,
+    isLoading,
+    isRefreshing,
+    isError,
+    errorMessage,
+    lastUpdated,
+    refreshAll,
+  } = useAppContext();
+
   const [query, setQuery] = useState('');
+
   const filteredSubjects = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (!normalizedQuery) {
+      return subjects;
+    }
     return subjects.filter(subject =>
-      subject.name.toLocaleLowerCase().includes(normalizedQuery),
+      subject.name.toLocaleLowerCase().includes(normalizedQuery) ||
+      subject.code.toLocaleLowerCase().includes(normalizedQuery),
     );
   }, [query, subjects]);
 
+  if (isLoading && subjects.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <LoadingState message="Đang tải danh sách môn học..." />
+      </Screen>
+    );
+  }
+
+  if (isError && subjects.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <ErrorState
+          title="Không thể tải danh sách môn học"
+          message={errorMessage}
+          onRetry={refreshAll}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
-      <PageTitle title="Môn học" subtitle={`${subjects.length} môn trong học kỳ này`} />
+      <OfflineBanner />
+      <SyncNotificationBanner />
+      <PageTitle
+        title="Môn học"
+        subtitle={`${subjects.length} môn trong học kỳ này`}
+      />
+      <LastUpdatedText timestamp={lastUpdated} />
+
       <View style={styles.searchWrap}>
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Tìm môn học theo tên..."
+          placeholder="Tìm môn học theo tên hoặc mã môn..."
           placeholderTextColor={colors.muted}
-          accessibilityLabel="Tìm môn học theo tên"
+          accessibilityLabel="Tìm môn học"
           returnKeyType="search"
           style={styles.search}
         />
       </View>
+
       <FlatList
         data={filteredSubjects}
         keyExtractor={item => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshAll}
+            colors={[colors.primary]}
+          />
+        }
         contentContainerStyle={[
           styles.list,
           filteredSubjects.length === 0 ? styles.emptyList : undefined,
@@ -52,8 +114,8 @@ function SubjectsScreen({navigation}: Props): React.JSX.Element {
               title={subjects.length ? 'Không tìm thấy môn học' : 'Chưa có môn học'}
               message={
                 subjects.length
-                  ? 'Thử tìm bằng một tên môn học khác nhé.'
-                  : 'Môn học được thêm vào sẽ hiển thị tại đây.'
+                  ? `Không có môn nào khớp với từ khóa "${query}".`
+                  : 'Danh sách môn học sẽ xuất hiện tại đây khi đồng bộ.'
               }
             />
           </Card>
@@ -62,7 +124,7 @@ function SubjectsScreen({navigation}: Props): React.JSX.Element {
           <SubjectCard
             subject={item}
             onPress={() =>
-              navigation.navigate('SubjectDetail', {subjectId: item.id})
+              navigation.navigate('SubjectDetail', {id: item.id})
             }
           />
         )}
@@ -72,7 +134,7 @@ function SubjectsScreen({navigation}: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  searchWrap: {paddingHorizontal: 20, marginBottom: 8},
+  searchWrap: {paddingHorizontal: 20, marginBottom: 10},
   search: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,

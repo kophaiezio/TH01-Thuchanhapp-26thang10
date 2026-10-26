@@ -1,6 +1,7 @@
 import React, {useMemo} from 'react';
 import {
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,15 +10,44 @@ import {
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {HomeStackParamList} from '../../types';
 import {useAppContext} from '../../context/AppContext';
+import {useSync} from '../../context/SyncContext';
 import {AssignmentItem} from '../../components/AssignmentItem';
-import {Card, EmptyState, PageTitle, Screen, SectionTitle} from '../../components/common';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  LastUpdatedText,
+  LoadingState,
+  OfflineBanner,
+  PageTitle,
+  Screen,
+  SectionTitle,
+  SyncBadge,
+  SyncNotificationBanner,
+} from '../../components/common';
 import {SubjectCard} from '../../components/SubjectCard';
 import {colors} from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
-function HomeScreen({navigation}: Props): React.JSX.Element {
-  const {student, subjects, assignments, toggleAssignment} = useAppContext();
+export function HomeScreen({navigation}: Props): React.JSX.Element {
+  const {
+    student,
+    subjects,
+    assignments,
+    isLoading,
+    isRefreshing,
+    isError,
+    errorMessage,
+    lastUpdated,
+    refreshAll,
+    toggleAssignment,
+  } = useAppContext();
+
+  const {hasPendingSync} = useSync();
+
+  const isProfilePending = hasPendingSync(student.id);
+
   const upcomingAssignments = useMemo(
     () =>
       assignments
@@ -29,23 +59,67 @@ function HomeScreen({navigation}: Props): React.JSX.Element {
         .slice(0, 4),
     [assignments],
   );
-  const subjectById = new Map(subjects.map(subject => [subject.id, subject]));
+
+  const subjectById = useMemo(
+    () => new Map(subjects.map(subject => [subject.id, subject])),
+    [subjects],
+  );
+
+  // 1. Trạng thái Loading khi chưa có dữ liệu nào
+  if (isLoading && subjects.length === 0 && assignments.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <LoadingState message="Đang tải dữ liệu học tập..." />
+      </Screen>
+    );
+  }
+
+  // 2. Trạng thái Error khi không có dữ liệu (kể cả cache)
+  if (isError && subjects.length === 0 && assignments.length === 0) {
+    return (
+      <Screen>
+        <OfflineBanner />
+        <ErrorState
+          title="Không thể tải trang chủ"
+          message={errorMessage}
+          onRetry={refreshAll}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
+      <OfflineBanner />
+      <SyncNotificationBanner />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshAll}
+            colors={[colors.primary]}
+          />
+        }>
         <PageTitle title="Tổng quan" subtitle="Chào buổi học tốt lành ✨" />
+        <LastUpdatedText timestamp={lastUpdated} />
 
         <Card style={styles.welcome}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {student.fullName.charAt(0).toUpperCase()}
+              {student.fullName ? student.fullName.charAt(0).toUpperCase() : 'S'}
             </Text>
           </View>
           <View style={styles.welcomeDetails}>
             <Text style={styles.greeting}>Xin chào,</Text>
             <Text style={styles.name}>{student.fullName}</Text>
             <Text style={styles.studentId}>Mã sinh viên · {student.studentId}</Text>
+            {isProfilePending ? (
+              <View style={styles.inlinePending}>
+                <SyncBadge label="Hồ sơ chưa đồng bộ" />
+              </View>
+            ) : null}
           </View>
           <Text style={styles.sparkle}>✦</Text>
         </Card>
@@ -74,32 +148,35 @@ function HomeScreen({navigation}: Props): React.JSX.Element {
               key={item.id}
               subject={item}
               onPress={() =>
-                navigation.navigate('SubjectDetail', {subjectId: item.id})
+                navigation.navigate('SubjectDetail', {id: item.id})
               }
             />
           ))
         ) : (
           <Card>
-            <EmptyState title="Chưa có môn học" message="Môn học của bạn sẽ xuất hiện tại đây." />
+            <EmptyState
+              title="Chưa có môn học"
+              message="Môn học của bạn sẽ xuất hiện tại đây."
+            />
           </Card>
         )}
 
-        <SectionTitle title="Bài tập sắp đến hạn" />
+        <SectionTitle
+          title="Bài tập sắp đến hạn"
+          actionLabel="Tất cả →"
+          onAction={() => navigation.getParent()?.navigate('AssignmentsTab')}
+        />
         {upcomingAssignments.length ? (
           upcomingAssignments.map(item => {
             const subject = subjectById.get(item.subjectId);
-            if (!subject) {
-              return null;
-            }
             return (
               <AssignmentItem
                 key={item.id}
                 assignment={item}
                 subject={subject}
+                isPendingSync={hasPendingSync(item.id)}
                 onPress={() =>
-                  navigation.navigate('AssignmentDetail', {
-                    assignmentId: item.id,
-                  })
+                  navigation.navigate('AssignmentDetail', {id: item.id})
                 }
                 onToggle={() => toggleAssignment(item.id)}
               />
@@ -107,7 +184,10 @@ function HomeScreen({navigation}: Props): React.JSX.Element {
           })
         ) : (
           <Card>
-            <EmptyState title="Bạn đã hoàn thành hết!" message="Hiện không có bài tập nào sắp đến hạn." />
+            <EmptyState
+              title="Bạn đã hoàn thành hết!"
+              message="Hiện không có bài tập nào sắp đến hạn."
+            />
           </Card>
         )}
 
@@ -148,7 +228,8 @@ const styles = StyleSheet.create({
   welcomeDetails: {flex: 1},
   greeting: {fontSize: 12, color: '#DDE2FF'},
   name: {fontSize: 17, fontWeight: '800', color: '#FFFFFF', marginTop: 2},
-  studentId: {fontSize: 11, color: '#E2E5FF', marginTop: 4},
+  studentId: {fontSize: 11, color: '#E2E5FF', marginTop: 3},
+  inlinePending: {marginTop: 6},
   sparkle: {fontSize: 22, color: '#FFE6A8', marginLeft: 8},
   statsRow: {flexDirection: 'row', gap: 10, marginTop: 2, marginBottom: 12},
   statCard: {flex: 1, alignItems: 'center', paddingVertical: 15},

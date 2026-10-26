@@ -1,97 +1,97 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Ứng dụng Quản lý học tập — API & Offline
 
-# Getting Started
+Dự án dùng **React Native CLI**, TypeScript, React Navigation, AsyncStorage, NetInfo và `json-server`; không dùng Expo. Thư mục dự án: `quanlyapp`.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Yêu cầu môi trường
 
-## Step 1: Start Metro
+- Node.js `>= 22.11.0` và npm.
+- Android Studio, Android SDK, JDK tương thích React Native `0.87.1`, cùng emulator hoặc thiết bị Android.
+- Emulator/điện thoại và máy tính chạy `json-server` phải truy cập được cùng API. Emulator Android tiêu chuẩn tự dùng `10.0.2.2`; thiết bị thật cần IP LAN của máy tính.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Cài đặt và chạy Android
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Mở PowerShell tại thư mục gốc `quanlyapp`. Cài dependencies lần đầu (hoặc sau khi thay đổi dependency):
 
-```sh
-# Using npm
+```powershell
+npm install
+```
+
+### 1. Chạy REST API mẫu
+
+Mở terminal thứ nhất:
+
+```powershell
+npm run server:delay
+```
+
+Lệnh này chạy `json-server` trên cổng `3000`, lắng nghe trên mọi giao diện mạng và thêm độ trễ `800ms` để có thể quan sát trạng thái tải. Dữ liệu ban đầu nằm trong `db.json`; các collection là `students`, `courses`, `sessions`, `assignments`, `grades`.
+
+Kiểm tra API trên máy tính:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/courses
+```
+
+`src/config.ts` chứa URL API. Android emulator tiêu chuẩn được nhận diện và dùng `http://10.0.2.2:3000`; máy khác dùng địa chỉ LAN khai báo trong `BASE_URL`. Nếu IP LAN thay đổi, cập nhật giá trị này, bảo đảm firewall cho phép cổng `3000`, rồi đóng/mở lại Metro để nạp cấu hình mới. Tìm IPv4 LAN bằng:
+
+```powershell
+ipconfig
+```
+
+### 2. Chạy Metro
+
+Mở terminal thứ hai tại thư mục dự án:
+
+```powershell
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+### 3. Cài và mở app trên emulator Android
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Mở terminal thứ ba:
 
-### Android
-
-```sh
-# Using npm
+```powershell
+adb devices
+adb reverse tcp:8081 tcp:8081
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+`adb reverse` chuyển Metro qua USB/emulator. Với thiết bị thật, bật USB debugging và xác nhận thiết bị xuất hiện trong `adb devices`; điện thoại cũng phải truy cập được IP LAN và cổng `3000` trên máy tính.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+### Chạy app có bundle để kiểm thử khởi động offline
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Bản debug cần Metro để tải JavaScript bundle. Để kiểm tra **tắt mạng rồi khởi động lại ứng dụng**, hãy build/cài bản release có bundle đóng gói sẵn:
 
-```sh
-bundle install
+```powershell
+Set-Location android
+.\gradlew.bat assembleRelease
+Set-Location ..
+adb install -r android\app\build\outputs\apk\release\app-release.apk
 ```
 
-Then, and every time you update your native dependencies, run:
+App vẫn cần `json-server` để lấy dữ liệu mới khi online; bản release chỉ loại bỏ phụ thuộc Metro lúc khởi động.
 
-```sh
-bundle exec pod install
+## Luồng dữ liệu và offline
+
+```mermaid
+flowchart LR
+  UI[Màn hình] --> STATE[AppDataContext / SyncContext]
+  STATE --> HOOK[useOutboxSync / useNetworkStatus]
+  STATE --> SERVICE[Resource Services]
+  SERVICE --> API[API client → json-server]
+  API -->|GET thành công| STATE
+  STATE -->|lưu dữ liệu và thời điểm tải| CACHE[(AsyncStorage Cache)]
+  CACHE -->|mở app: hiển thị cache trước| STATE
+  STATE -->|PATCH/POST khi offline: cập nhật lạc quan| CACHE
+  STATE -->|xếp thao tác chờ gửi| OUTBOX[(AsyncStorage Outbox)]
+  HOOK -->|khi mạng trở lại: lấy từng thao tác| OUTBOX
+  OUTBOX --> SYNC[Outbox Service]
+  SYNC --> API
+  API -->|đồng bộ xong| HOOK
+  HOOK -->|làm mới dữ liệu và thông báo| STATE
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- Màn hình đọc/cập nhật dữ liệu qua Context; `useNetworkStatus` theo dõi mạng và `useOutboxSync` quản lý hàng đợi, trạng thái đồng bộ. Các service gọi API; cache và Outbox là các helper AsyncStorage riêng, không được thao tác trực tiếp trong UI.
+- Khi mở app, dữ liệu đã cache được nạp để hiển thị ngay; khi online, ứng dụng gọi API và cập nhật cache. Màn hình danh sách có trạng thái tải, lỗi/thử lại, rỗng và kéo để làm mới.
+- Khi offline, thay đổi trạng thái bài tập, hồ sơ và bài tập mới được thể hiện lạc quan trên giao diện, ghi vào cache và đưa vào Outbox. Các mục còn chờ có nhãn **“Chưa đồng bộ”**. Khi mạng trở lại, Outbox gửi lần lượt; thành công thì xóa thao tác khỏi hàng đợi và làm mới dữ liệu.
+- Với PATCH, ứng dụng đọc bản ghi server trước khi gửi. Nếu `server.updatedAt` mới hơn thời điểm thao tác offline (`operation.updatedAt`), bỏ qua PATCH và giữ dữ liệu server; nếu không, áp dụng PATCH offline. Sau lượt đồng bộ, dữ liệu được tải lại từ server. Banner hiện số thay đổi đã đồng bộ; hiện chưa có thông báo riêng mô tả một thao tác bị bỏ qua do xung đột.

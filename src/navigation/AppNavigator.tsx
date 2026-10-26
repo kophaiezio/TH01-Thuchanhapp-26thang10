@@ -1,15 +1,18 @@
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-import {AppProvider} from '../context/AppContext';
+import {AppDataProvider} from '../context/AppDataContext';
+import {SyncProvider} from '../context/SyncContext';
 import BottomTabNavigator from './BottomTabNavigator';
 
 function AppNavigator(): React.JSX.Element {
   return (
-    <AppProvider>
-      <NavigationContainer>
-        <BottomTabNavigator />
-      </NavigationContainer>
-    </AppProvider>
+    <SyncProvider>
+      <AppDataProvider>
+        <NavigationContainer>
+          <BottomTabNavigator />
+        </NavigationContainer>
+      </AppDataProvider>
+    </SyncProvider>
   );
 }
 

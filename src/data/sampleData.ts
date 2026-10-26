@@ -1,12 +1,14 @@
 import type {Assignment, ScheduleSession, Student, Subject} from '../types';
 
 export const initialStudent: Student = {
+  id: 'student-b23dccc147',
   studentId: 'B23DCCC147',
   fullName: 'Đoàn Ngọc Thắng',
   className: 'B23CCPM02',
-  major: 'Công nghệ thông tin-UDU',
+  major: 'Công nghệ thông tin - UDU',
   email: 'ThangDN.b23cc147@stu.ptit.edu.vn',
   phone: '0911093289',
+  updatedAt: '2026-10-26T08:00:00.000Z',
 };
 
 export const initialSubjects: Subject[] = [
@@ -19,6 +21,7 @@ export const initialSubjects: Subject[] = [
     color: '#5266D8',
     description:
       'Phân tích yêu cầu, mô hình hóa quy trình nghiệp vụ và xây dựng tài liệu đặc tả cho hệ thống phần mềm.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-application-development',
@@ -29,6 +32,7 @@ export const initialSubjects: Subject[] = [
     color: '#1D9B84',
     description:
       'Thực hành phân tích, xây dựng giao diện và triển khai ứng dụng trên các nền tảng phổ biến.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-advanced-web-programming',
@@ -39,16 +43,18 @@ export const initialSubjects: Subject[] = [
     color: '#DA8A32',
     description:
       'Xây dựng ứng dụng web hiện đại với React, quản lý trạng thái, định tuyến và tích hợp dịch vụ dữ liệu.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-vietnamese-communist-party-history',
     code: 'HIS101',
     name: 'Lịch sử Đảng cộng sản Việt Nam',
-    credits: 3,
+    credits: 2,
     room: 'D204',
     color: '#C45478',
     description:
       'Tìm hiểu các dấu mốc, đường lối và vai trò lãnh đạo của Đảng Cộng sản Việt Nam qua các thời kỳ.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-service-oriented-development',
@@ -59,6 +65,7 @@ export const initialSubjects: Subject[] = [
     color: '#3886C5',
     description:
       'Thiết kế các dịch vụ phần mềm độc lập, giao tiếp qua API và tích hợp theo kiến trúc hướng dịch vụ.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-software-quality-assurance',
@@ -69,6 +76,7 @@ export const initialSubjects: Subject[] = [
     color: '#8060B5',
     description:
       'Lập kế hoạch chất lượng, thiết kế ca kiểm thử, theo dõi lỗi và đánh giá chất lượng sản phẩm phần mềm.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'subject-web-programming',
@@ -79,6 +87,7 @@ export const initialSubjects: Subject[] = [
     color: '#2396A6',
     description:
       'Xây dựng website với HTML, CSS, JavaScript và các nguyên tắc thiết kế giao diện web.',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
 ];
 
@@ -91,6 +100,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '09:30',
     room: 'A201',
     topic: 'Thu thập và phân tích yêu cầu',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-mon-web-programming',
@@ -100,6 +110,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '15:00',
     room: 'C102',
     topic: 'Cấu trúc trang web với HTML và CSS',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-tue-application-development',
@@ -109,6 +120,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '11:30',
     room: 'B305',
     topic: 'Thiết kế và xây dựng ứng dụng',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-wed-history',
@@ -118,6 +130,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '15:00',
     room: 'D204',
     topic: 'Đảng lãnh đạo cuộc kháng chiến giành độc lập',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-thu-service-development',
@@ -127,6 +140,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '10:30',
     room: 'A304',
     topic: 'Kiến trúc phần mềm hướng dịch vụ',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-fri-advanced-web',
@@ -136,6 +150,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '09:30',
     room: 'C205',
     topic: 'Ứng dụng React và quản lý trạng thái',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
   {
     id: 'session-fri-quality-assurance',
@@ -145,6 +160,7 @@ export const initialSchedule: ScheduleSession[] = [
     endTime: '15:00',
     room: 'B204',
     topic: 'Thiết kế và thực hiện kiểm thử phần mềm',
+    updatedAt: '2026-10-26T08:00:00.000Z',
   },
 ];
 
@@ -164,6 +180,8 @@ export const initialAssignments: Assignment[] = [
       'Thu thập yêu cầu của người dùng, lập sơ đồ use case và viết tài liệu đặc tả cho ứng dụng quản lý học tập.',
     dueAt: dateAfterDays(1),
     completed: false,
+    createdAt: '2026-10-25T08:00:00.000Z',
+    updatedAt: '2026-10-25T08:00:00.000Z',
   },
   {
     id: 'assignment-application-development-01',
@@ -173,6 +191,8 @@ export const initialAssignments: Assignment[] = [
       'Xây dựng ứng dụng có màn hình danh sách công việc, chức năng thêm và cập nhật trạng thái hoàn thành.',
     dueAt: dateAfterDays(2),
     completed: false,
+    createdAt: '2026-10-25T08:30:00.000Z',
+    updatedAt: '2026-10-25T08:30:00.000Z',
   },
   {
     id: 'assignment-advanced-web-01',
@@ -182,6 +202,8 @@ export const initialAssignments: Assignment[] = [
       'Xây dựng dashboard có nhiều trang, quản lý trạng thái và hiển thị dữ liệu từ dịch vụ web.',
     dueAt: dateAfterDays(4),
     completed: false,
+    createdAt: '2026-10-25T09:00:00.000Z',
+    updatedAt: '2026-10-25T09:00:00.000Z',
   },
   {
     id: 'assignment-history-01',
@@ -191,6 +213,8 @@ export const initialAssignments: Assignment[] = [
       'Chọn một dấu mốc trong lịch sử Đảng Cộng sản Việt Nam, trình bày bối cảnh, diễn biến và ý nghĩa.',
     dueAt: dateAfterDays(6),
     completed: false,
+    createdAt: '2026-10-25T09:30:00.000Z',
+    updatedAt: '2026-10-25T09:30:00.000Z',
   },
   {
     id: 'assignment-service-development-01',
@@ -200,6 +224,8 @@ export const initialAssignments: Assignment[] = [
       'Thiết kế các endpoint REST cho ứng dụng đặt lịch, xác định phương thức HTTP và cấu trúc dữ liệu trả về.',
     dueAt: dateAfterDays(8),
     completed: true,
+    createdAt: '2026-10-25T10:00:00.000Z',
+    updatedAt: '2026-10-25T10:00:00.000Z',
   },
   {
     id: 'assignment-quality-assurance-01',
@@ -209,6 +235,8 @@ export const initialAssignments: Assignment[] = [
       'Viết các trường hợp kiểm thử cho luồng đăng nhập, đăng ký và cập nhật thông tin người dùng.',
     dueAt: dateAfterDays(10),
     completed: false,
+    createdAt: '2026-10-25T10:30:00.000Z',
+    updatedAt: '2026-10-25T10:30:00.000Z',
   },
   {
     id: 'assignment-web-programming-01',
@@ -218,5 +246,7 @@ export const initialAssignments: Assignment[] = [
       'Tạo website responsive gồm phần giới thiệu, kỹ năng và thông tin liên hệ bằng HTML, CSS và JavaScript.',
     dueAt: dateAfterDays(12),
     completed: false,
+    createdAt: '2026-10-25T11:00:00.000Z',
+    updatedAt: '2026-10-25T11:00:00.000Z',
   },
 ];

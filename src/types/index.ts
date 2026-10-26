@@ -1,10 +1,12 @@
 export type Student = {
+  id: string;
   studentId: string;
   fullName: string;
   className: string;
   major: string;
   email: string;
   phone: string;
+  updatedAt: string;
 };
 
 export type Subject = {
@@ -15,6 +17,7 @@ export type Subject = {
   room: string;
   color: string;
   description: string;
+  updatedAt: string;
 };
 
 export type ScheduleSession = {
@@ -25,6 +28,7 @@ export type ScheduleSession = {
   endTime: string;
   room: string;
   topic: string;
+  updatedAt: string;
 };
 
 export type Assignment = {
@@ -34,32 +38,63 @@ export type Assignment = {
   description: string;
   dueAt: string;
   completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Grade = {
+  id: string;
+  studentId: string;
+  courseId: string;
+  semester: string;
+  score4: number;
+  letterGrade: string;
+  updatedAt: string;
+};
+
+export type ApiResource =
+  | 'students'
+  | 'courses'
+  | 'sessions'
+  | 'assignments'
+  | 'grades';
+
+export type OutboxOperation = {
+  id: string;
+  method: 'POST' | 'PATCH' | 'DELETE';
+  resource: ApiResource;
+  entityId: string;
+  payload: Record<string, unknown>;
+  updatedAt: string;
+  createdAt?: string;
 };
 
 export type HomeStackParamList = {
   Home: undefined;
-  SubjectDetail: {subjectId: string};
-  AssignmentDetail: {assignmentId: string};
+  SubjectDetail: {id: string};
+  AssignmentDetail: {id: string};
 };
 
 export type SubjectsStackParamList = {
   Subjects: undefined;
-  SubjectDetail: {subjectId: string};
+  SubjectDetail: {id: string};
 };
 
 export type ScheduleStackParamList = {
   Schedule: undefined;
-  ScheduleDetail: {sessionId: string};
+  ScheduleDetail: {id: string};
 };
 
 export type AssignmentsStackParamList = {
   Assignments: undefined;
-  AssignmentDetail: {assignmentId: string};
+  AssignmentDetail: {id: string};
+  AddAssignment: undefined;
 };
 
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
+  Grades: undefined;
 };
 
 export type BottomTabParamList = {
